@@ -1,18 +1,17 @@
-// Our team uses this script to control the single page app behaviour
-// We keep everything inside knowledgeRunner so it is easy to read
+// Script that controls the single page app
 function knowledgeRunner() {
   const sections = document.querySelectorAll(".view-section");
   const navLinks = document.querySelectorAll("[data-nav]");
   const main = document.getElementById("main");
 
-  // Helper function that shows one view and hides the others
+  // Show one view and hide the rest
   function showView(id, push) {
     sections.forEach((section) => {
       const isMatch = section.id === id;
       section.hidden = !isMatch;
     });
 
-    // Update the document title so each view feels like its own page
+    // Update heading in page title
     let titlePart = "Home";
     if (id === "services") {
       titlePart = "Services";
@@ -21,8 +20,19 @@ function knowledgeRunner() {
     }
     document.title = "Empower Ability Labs " + titlePart;
 
+    // Update active state in the nav
+    navLinks.forEach((link) => {
+      const target = link.getAttribute("data-nav") || "home";
+      if (target === id) {
+        link.classList.add("active");
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.classList.remove("active");
+        link.removeAttribute("aria-current");
+      }
+    });
+
     // Move focus to the first heading of the new view
-    // This helps screen reader and keyboard users
     const heading = document.querySelector("#" + id + " h1");
     if (heading) {
       heading.focus();
@@ -30,15 +40,13 @@ function knowledgeRunner() {
       main.focus();
     }
 
-    // Handle browser history.
-    // When push is true we add a new state for the back button
+    // Manage browser history
     if (push) {
       history.pushState({ view: id }, "", "#" + id);
     }
   }
 
-  // Navigation click handler
-  // We stop the default jump and use showView instead
+  // Nav link click handler
   navLinks.forEach((link) => {
     link.addEventListener("click", (event) => {
       event.preventDefault();
@@ -47,18 +55,17 @@ function knowledgeRunner() {
     });
   });
 
-  // When the user presses the browser back button
-  // we read the hash and show the correct view
+  // Back button support
   window.addEventListener("popstate", () => {
     const hash = window.location.hash.replace("#", "") || "home";
     showView(hash, false);
   });
 
-  // When the app loads we use the hash to decide which view to show first
+  // Decide which view to show first
   const startView = window.location.hash.replace("#", "") || "home";
   showView(startView, false);
 
-  // Simple navigation toggle for small screens
+  // Small screen nav toggle
   const navToggle = document.querySelector(".navbar-toggler");
   const navMenu = document.getElementById("mainNav");
   if (navToggle && navMenu) {
@@ -70,14 +77,22 @@ function knowledgeRunner() {
     });
   }
 
-  // -------- Modal behaviour for Meet the Empower Community --------
+  // Skip link should send focus to main content
+  const skipLink = document.querySelector(".skip-link");
+  if (skipLink && main) {
+    skipLink.addEventListener("click", (event) => {
+      event.preventDefault();
+      main.focus();
+      main.scrollIntoView({ behavior: "instant" });
+    });
+  }
 
+  // Modal behaviour for Meet the Empower Community
   const openModalBtn = document.getElementById("openCommunityModal");
   const modal = document.getElementById("communityModal");
   const closeModalBtn = document.getElementById("closeCommunityModal");
   let lastFocusedBeforeModal = null;
 
-  // Open modal and store the element that had focus
   function openModal() {
     if (!modal) return;
     lastFocusedBeforeModal = document.activeElement;
@@ -89,7 +104,6 @@ function knowledgeRunner() {
     document.addEventListener("keydown", handleModalKeydown);
   }
 
-  // Close modal and send focus back to the trigger button
   function closeModal() {
     if (!modal) return;
     modal.hidden = true;
@@ -99,14 +113,12 @@ function knowledgeRunner() {
     }
   }
 
-  // Allow escape key to close the modal
   function handleModalKeydown(event) {
     if (event.key === "Escape") {
       closeModal();
     }
   }
 
-  // Wire up open and close events
   if (openModalBtn) {
     openModalBtn.addEventListener("click", openModal);
   }
@@ -114,7 +126,6 @@ function knowledgeRunner() {
     closeModalBtn.addEventListener("click", closeModal);
   }
   if (modal) {
-    // Clicking outside the dialog closes it
     modal.addEventListener("click", (event) => {
       if (event.target === modal) {
         closeModal();
@@ -122,15 +133,13 @@ function knowledgeRunner() {
     });
   }
 
-  // -------- Show and hide text area based on speaker checkbox --------
-
+  // Show and hide text area based on speaker checkbox
   const topicSpeaker = document.getElementById("topicSpeaker");
   const eventDetailsGroup = document.getElementById("eventDetailsGroup");
   if (topicSpeaker && eventDetailsGroup) {
     topicSpeaker.addEventListener("change", () => {
       const show = topicSpeaker.checked;
       eventDetailsGroup.hidden = !show;
-      // When the area appears we move focus inside so the user can start typing
       if (show) {
         const textArea = document.getElementById("eventDetails");
         if (textArea) {
@@ -140,11 +149,9 @@ function knowledgeRunner() {
     });
   }
 
-  // -------- Switch behaviour for email updates --------
-
+  // Switch behaviour for email updates
   const emailSwitch = document.getElementById("emailUpdatesSwitch");
   if (emailSwitch) {
-    // We created a helper to toggle the switch state and text
     function toggleSwitch() {
       const current =
         emailSwitch.getAttribute("aria-checked") === "true";
@@ -153,7 +160,6 @@ function knowledgeRunner() {
       emailSwitch.textContent = next ? "On" : "Off";
     }
 
-    // Click and keyboard both control the switch
     emailSwitch.addEventListener("click", toggleSwitch);
     emailSwitch.addEventListener("keydown", (event) => {
       if (event.key === " " || event.key === "Enter") {
@@ -163,8 +169,7 @@ function knowledgeRunner() {
     });
   }
 
-  // -------- Form validation and user messages --------
-
+  // Form validation and user messages
   const form = document.getElementById("scheduleForm");
   const messages = document.getElementById("formMessages");
 
@@ -176,23 +181,22 @@ function knowledgeRunner() {
       const email = document.getElementById("email");
       const errors = [];
 
-      // We focused on email in our validation because it is the required field
       if (!email.value.trim()) {
         errors.push("Email is required");
       } else if (!email.checkValidity()) {
         errors.push("Please enter a valid email address");
       }
 
-      // If there are problems we show them in the alert region
       if (errors.length) {
+        email.setAttribute("aria-invalid", "true");
         messages.textContent = errors.join(". ");
+        messages.focus();
       } else {
-        // Simple success state so the user knows the form was sent
+        email.removeAttribute("aria-invalid");
         messages.textContent =
           "Thank you. We have received your request.";
         form.reset();
 
-        // Hide the event details again and reset the switch
         if (eventDetailsGroup) {
           eventDetailsGroup.hidden = true;
         }
@@ -205,5 +209,5 @@ function knowledgeRunner() {
   }
 }
 
-// We wait for the document to be ready before running our script
+// Run script when document is ready
 document.addEventListener("DOMContentLoaded", knowledgeRunner);
